@@ -119,9 +119,11 @@ function mailchimp_get_api_object($classname = 'Mailchimp') {
   if (isset($mailchimp) && $mailchimp instanceof $classname) {
     return $mailchimp;
   }
-
   if (module_exists('libraries')) {
     $library = libraries_load('mailchimp');
+  }
+  else {
+    $library = FALSE;
   }
   if (!$library['installed'] && !class_exists('Mailchimp\Mailchimp')) {
     $msg = t('Failed to load MailChimp PHP library. Please refer to the installation requirements.');
