@@ -424,13 +424,29 @@ function mailchimp_is_subscribed($list_id, $email, $reset = FALSE) {
 /**
  * Subscribe a user to a MailChimp list in real time or by adding to the queue.
  *
- * @see Mailchimp_Lists::subscribe()
+ * @param string $list_id
+ *  List ID.
+ * @param string $email
+ *  Email address of user.
+ * @param array $merge_vars
+ *  An array of merge variables with the key as the variable name
+ * @param array $interests
+ *  An array of interests with the key being the interest ID.
+ * @param bool $double_optin
+ *  Whether to enable double optin. Set to TRUE to activate double optin.
+ * @param string $format
+ *  Format to use to send emails to user.
+ * @param bool $realtime
+ *  Set to TRUE or 1 to override UI cron settings and process data immediately.
+ *
+ * For details about variables
+ * @see Mailchimp_Lists::addOrUpdateMember()
  *
  * @return bool
- *   True on success.
+ *   TRUE on success.
  */
-function mailchimp_subscribe($list_id, $email, $merge_vars = NULL, $interests = array(), $double_optin = FALSE, $format = 'html') {
-  if (variable_get('mailchimp_cron', FALSE)) {
+function mailchimp_subscribe($list_id, $email, $merge_vars = NULL, $interests = array(), $double_optin = FALSE, $format = 'html', $realtime = NULL) {
+  if (variable_get('mailchimp_cron', FALSE) && empty($realtime)) {
     $args = array(
       'list_id' => $list_id,
       'email' => $email,
@@ -446,9 +462,9 @@ function mailchimp_subscribe($list_id, $email, $merge_vars = NULL, $interests = 
 }
 
 /**
- * Wrapper around Mailchimp_Lists::subscribe().
+ * Wrapper around Mailchimp_Lists::addOrUpdateMember().
  *
- * @see Mailchimp_Lists::subscribe()
+ * @see Mailchimp_Lists::addOrUpdateMember()
  *
  * @return bool
  *   True on success.
