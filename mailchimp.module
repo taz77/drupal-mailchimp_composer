@@ -446,9 +446,9 @@ function mailchimp_subscribe($list_id, $email, $merge_vars = NULL, $interests = 
 }
 
 /**
- * Wrapper around Mailchimp_Lists::subscribe().
+ * Wrapper around Mailchimp_Lists::addOrUpdateMember().
  *
- * @see Mailchimp_Lists::subscribe()
+ * @see Mailchimp_Lists::addOrUpdateMember()
  *
  * @return bool
  *   True on success.
