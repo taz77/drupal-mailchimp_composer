@@ -199,8 +199,6 @@ function mailchimp_signup_form($form, &$form_state, MailchimpSignup $signup) {
     '#description' => t('If set, subscribers will be able to select applicable interest groups on the signup form.'),
   );
 
-
-
   $form['save'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
