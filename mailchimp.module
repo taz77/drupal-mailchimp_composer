@@ -21,7 +21,7 @@ function mailchimp_libraries_info() {
   $libraries['mailchimp'] = array(
     'name' => 'MailChimp API',
     'vendor url' => 'https://github.com/thinkshout/mailchimp-api-php',
-    'download url' => 'https://github.com/thinkshout/mailchimp-api-php/archive/1.0.1.zip',
+    'download url' => 'https://github.com/thinkshout/mailchimp-api-php/archive/v1.0.3.zip',
     'version arguments' => array(
       'file' => 'composer.json',
       'pattern' => '/"version": "([0-9a-zA-Z.-]+)"/',
@@ -488,7 +488,7 @@ function mailchimp_subscribe_process($list_id, $email, $merge_vars = NULL, $inte
     if (!empty($interests)) {
       $selected_interests = array();
       foreach ($interests as $interest_id => $interest_status) {
-        $selected_interests[$interest_id] = ($interest_status !== 0);
+        $selected_interests[$interest_id] = $interest_status;
       }
 
       if (!empty($selected_interests)) {
@@ -513,6 +513,7 @@ function mailchimp_subscribe_process($list_id, $email, $merge_vars = NULL, $inte
           '@email' => $email,
           '@list' => $list_id,
         ), WATCHDOG_NOTICE
+
       );
     }
     else {
