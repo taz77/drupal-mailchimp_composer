@@ -424,29 +424,13 @@ function mailchimp_is_subscribed($list_id, $email, $reset = FALSE) {
 /**
  * Subscribe a user to a MailChimp list in real time or by adding to the queue.
  *
- * @param string $list_id
- *  List ID.
- * @param string $email
- *  Email address of user.
- * @param array $merge_vars
- *  An array of merge variables with the key as the variable name
- * @param array $interests
- *  An array of interests with the key being the interest ID.
- * @param bool $double_optin
- *  Whether to enable double optin. Set to TRUE to activate double optin.
- * @param string $format
- *  Format to use to send emails to user.
- * @param bool $realtime
- *  Set to TRUE or 1 to override UI cron settings and process data immediately.
- *
- * For details about variables
- * @see Mailchimp_Lists::addOrUpdateMember()
+ * @see Mailchimp_Lists::subscribe()
  *
  * @return bool
- *   TRUE on success.
+ *   True on success.
  */
-function mailchimp_subscribe($list_id, $email, $merge_vars = NULL, $interests = array(), $double_optin = FALSE, $format = 'html', $realtime = NULL) {
-  if (variable_get('mailchimp_cron', FALSE) && empty($realtime)) {
+function mailchimp_subscribe($list_id, $email, $merge_vars = NULL, $interests = array(), $double_optin = FALSE, $format = 'html') {
+  if (variable_get('mailchimp_cron', FALSE)) {
     $args = array(
       'list_id' => $list_id,
       'email' => $email,
@@ -462,9 +446,9 @@ function mailchimp_subscribe($list_id, $email, $merge_vars = NULL, $interests = 
 }
 
 /**
- * Wrapper around Mailchimp_Lists::addOrUpdateMember().
+ * Wrapper around Mailchimp_Lists::subscribe().
  *
- * @see Mailchimp_Lists::addOrUpdateMember()
+ * @see Mailchimp_Lists::subscribe()
  *
  * @return bool
  *   True on success.
@@ -487,8 +471,10 @@ function mailchimp_subscribe_process($list_id, $email, $merge_vars = NULL, $inte
     // Set interests.
     if (!empty($interests)) {
       $selected_interests = array();
-      foreach ($interests as $interest_id => $interest_status) {
-        $selected_interests[$interest_id] = $interest_status;
+      foreach ($interests as $interest_group) {
+        foreach ($interest_group as $interest_id => $interest_status) {
+          $selected_interests[$interest_id] = ($interest_status !== 0);
+        }
       }
 
       if (!empty($selected_interests)) {
@@ -509,11 +495,7 @@ function mailchimp_subscribe_process($list_id, $email, $merge_vars = NULL, $inte
       // Clear user cache, just in case there's some cruft leftover:
       mailchimp_cache_clear_member($list_id, $email);
       watchdog('mailchimp', '@email was subscribed to list @list.',
-        array(
-          '@email' => $email,
-          '@list' => $list_id,
-        ), WATCHDOG_NOTICE
-
+        array('@email' => $email, '@list' => $list_id), WATCHDOG_NOTICE
       );
     }
     else {
@@ -558,24 +540,19 @@ function mailchimp_addto_queue($function, $args) {
 }
 
 /**
- * Updates the local cache for a user as though a queued request had been
- * processed.
+ * Updates the local cache for a user as though a queued request had been processed.
  *
- * If we don't do this, then users can make changes, but not have them shown on
- * the site until cron runs, which is intensely confusing. See
- * https://www.drupal.org/node/2503597
+ * If we don't do this, then users can make changes, but not have them shown on the site until
+ * cron runs, which is intensely confusing. See https://www.drupal.org/node/2503597
  *
- * @param string $function
- *   The name of the function that the queue runner will call when the update
- *   is processed.
- * @param array $args
+ * @string $function
+ *   The name of the function that the queue runner will call when the update is processed.
+ * @array $args
  *   The list of args that will be passed to the queue runner.
- *
- * @return bool
  */
 function mailchimp_update_local_cache($function, $args) {
   $list_id = isset($args['list_id']) ? $args['list_id'] : NULL;
-  $email = isset($args['email']) ? $args['email'] : NULL;
+  $email   = isset($args['email']) ? $args['email'] : NULL;
   if (empty($list_id) || empty($email)) {
     return FALSE;
   }
@@ -600,7 +577,8 @@ function mailchimp_update_local_cache($function, $args) {
     $cache->status = 'subscribed';
   }
   // Handle member updates.
-  if ($function == 'mailchimp_update_member_process' || $function == 'mailchimp_subscribe_process') {
+  if ($function == 'mailchimp_update_member_process' ||
+      $function == 'mailchimp_subscribe_process') {
     // Update cached merge vars.
     foreach ($args['merge_vars'] as $key => $value) {
       $cache->merge_fields->$key = $value;
@@ -1049,8 +1027,7 @@ function mailchimp_segment_batch_add_subscribers($list_id, $segment_id, $batch) 
 }
 
 /**
- * Wrapper around MailchimpCampaigns->getCampaign() to return data for a given
- * campaign.
+ * Wrapper around MailchimpCampaigns->getCampaign() to return data for a given campaign.
  *
  * Data is stored in the MailChimp cache.
  *
@@ -1396,11 +1373,9 @@ function mailchimp_interest_groups_form_elements($list, $defaults = array(), $em
           $default_values[$group->id][] = $interest->id;
         }
       }
-      else {
-        if (!empty($defaults)) {
-          if (isset($defaults[$group->id][$interest->id]) && !empty($defaults[$group->id][$interest->id])) {
-            $default_values[$group->id][] = $interest->id;
-          }
+      else if (!empty($defaults)) {
+        if (isset($defaults[$group->id][$interest->id]) && !empty($defaults[$group->id][$interest->id])) {
+          $default_values[$group->id][] = $interest->id;
         }
       }
     }
@@ -1425,23 +1400,15 @@ function mailchimp_interest_groups_form_elements($list, $defaults = array(), $em
  * @return array
  *   A properly formatted drupal form element.
  */
-function mailchimp_insert_drupal_form_tag($mergevar, $placeholder) {
+function mailchimp_insert_drupal_form_tag($mergevar) {
   // Insert common FormAPI properties:
   $input = array(
+    '#title' => t('@mergevar', array('@mergevar' => $mergevar->name)),
     '#weight' => $mergevar->display_order,
     '#required' => $mergevar->required,
     '#default_value' => $mergevar->default_value,
-
   );
-  $placeholder_req = $mergevar->required ? ' *' : '';
-  $title = t('@mergevar', array('@mergevar' => $mergevar->name));
-  // Check to see if we should set placeholder or #title attribute
-  if ($placeholder) {
-    $input['#attributes']['placeholder'] = $title . $placeholder_req;
-  }
-  else {
-    $input['#title'] = $title;
-  }
+
   switch ($mergevar->type) {
     case 'address':
       // Sub-array of address elements according to MailChimp specs.
@@ -1449,45 +1416,35 @@ function mailchimp_insert_drupal_form_tag($mergevar, $placeholder) {
       $input['#type'] = 'container';
       $input['#tree'] = TRUE;
       $input['addr1'] = array(
+        '#title' => t('Address 1'),
         '#type' => 'textfield',
       );
       $input['addr2'] = array(
+        '#title' => t('Address 2'),
         '#type' => 'textfield',
       );
       $input['city'] = array(
+        '#title' => t('City'),
         '#type' => 'textfield',
       );
       $input['state'] = array(
+        '#title' => t('State'),
         '#type' => 'textfield',
         '#size' => 2,
         '#maxlength' => 2,
       );
       $input['zip'] = array(
+        '#title' => t('Zip'),
         '#type' => 'textfield',
         '#size' => 6,
         '#maxlength' => 6,
       );
       $input['country'] = array(
+        '#title' => t('Country'),
         '#type' => 'textfield',
         '#size' => 2,
         '#maxlength' => 2,
       );
-      if (!$placeholder) {
-        $input['addr1']['#title'] = t('Address 1');
-        $input['addr2']['#title'] = t('Address 2');
-        $input['city']['#title'] = t('City');
-        $input['state']['#title'] = t('State');
-        $input['zip']['#title'] = t('Zip');
-        $input['country']['#title'] = t('Country');
-      }
-      else {
-        $input['addr1']['#attributes']['placeholder'] = t('Address 1') . $placeholder_req;
-        $input['addr2']['#attributes']['placeholder'] = t('Address 2') . $placeholder_req;
-        $input['city']['#attributes']['placeholder'] = t('City') . $placeholder_req;
-        $input['state']['#attributes']['placeholder'] = t('State') . $placeholder_req;
-        $input['zip']['#attributes']['placeholder'] = t('Zip') . $placeholder_req;
-        $input['country']['#attributes']['placeholder'] = t('Country') . $placeholder_req;
-      }
       break;
     case 'dropdown':
       // Dropdown is mapped to <select> element in Drupal Form API.
