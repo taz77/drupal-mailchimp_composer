@@ -29,22 +29,43 @@ respective README's for more details.
   * Display a history of Mailchimp email and subscription activity on a tab for
     any Entity with an email address.
 
+## Upgrade Notes
+The 7.x-2.x and 7.x-3.x branches will become unsupported as MailChimp phases out
+their API version 2.0 by the end of 2016. We recommend upgrading to 7.x-4.x, the
+branch that is using MailChimp’s latest API version 3.0. The upgrade path is
+manual at this point, requiring disabling & uninstalling the older branch, then
+installing 7.x-4.x.
+
+Worry not! Your lists, subscribers, and campaign data will remain safe and sound
+on your MailChimp account (http://mailchimp.com/).
+
+Please note: The major structural change between 7.x-2.x and 7.x-4.x is the
+“Lists and Users” tab has been separated into three tabs “Fields”, “Lists” and
+“SignUp Forms”. You will find most of the user related configuration by creating
+a MailChimp field on the user account, here: admin/config/people/accounts/fields
+
+For more information, please visit the FAQ (https://www.drupal.org/node/2793241)
+
 ## Installation Notes
   * You need to have a MailChimp API Key.
   * You need to have at least one list created in MailChimp to use the
     mailchimp_lists module.
   * If you use a drush make workflow, see the example drush makefile:
     mailchimp.make.example.
-
-  * The MailChimp PHP library exist in your Druapl installation either via
-    Libraries module or via Composer
+  * The MailChimp PHP library must exist in your Drupal installation.
 
     If you are using Libraries module for version 7.x-4.x:
+
+    The library has dependencies managed by Composer. If you would prefer
+    not to use Composer, you can download the pre-built library package:
+    https://github.com/thinkshout/mailchimp-api-php/releases/download/v1.0.4/v1.0.4-package.zip
+
+    To use Composer:
 
       - Download Composer if you don't already have it installed:
         https://getcomposer.org/download/
 
-      - Download version 1.0.3 of the v3 API library:
+      - Download the most recent release of the v3 API library:
         https://github.com/thinkshout/mailchimp-api-php/releases
 
       - Extract the library archive to libraries/mailchimp
