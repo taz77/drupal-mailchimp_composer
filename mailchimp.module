@@ -465,8 +465,9 @@ function mailchimp_subscribe($list_id, $email, $merge_vars = NULL, $interests = 
  *
  * @see Mailchimp_Lists::subscribe()
  *
- * @return bool
- *   True on success.
+ * @return mixed
+ *   Return of FALSE if a problem occurred. Otherwise the MailChimp response is
+ *   returned.
  */
 function mailchimp_subscribe_process($list_id, $email, $merge_vars = NULL, $interests = array(), $double_optin = FALSE, $format = 'html') {
   $result = FALSE;
